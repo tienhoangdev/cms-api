@@ -13,6 +13,7 @@ import path from "path";
 const articlesController = {
   // TOTO: Add sort parameters
   // TOTO: Add filter by some conditions
+  // TODO: Filter by status of the article, must be ADMIN and require access key to access article with status !== 'published'
   getArticleList: async (req, res) => {
     try {
       let queryParam;
@@ -41,6 +42,9 @@ const articlesController = {
         limit,
         offset,
         order: [["created_at", "DESC"]],
+        where: {
+          status: "published",
+        },
       });
       const response = {
         totalArticles: count,

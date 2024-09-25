@@ -1,5 +1,6 @@
 'use strict';
 
+import 'dotenv/config' 
 import fs from 'fs'
 import path from 'path'
 import Sequelize from 'sequelize'
@@ -24,9 +25,9 @@ fs
       file.indexOf('.test.js') === -1
     );
   })
-  .forEach(file => {
-    const model = require(path.join(__dirname, file))(sequelize, Sequelize.DataTypes);
-    db[model.name] = model;
+  .forEach(async(file) => {
+    const { default: model } = await import(path.join(__dirname, file));
+    db[model.name] = model(sequelize, Sequelize.DataTypes);
   });
 
 Object.keys(db).forEach(modelName => {

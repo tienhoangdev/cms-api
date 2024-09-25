@@ -10,6 +10,12 @@ const Article = sequelize.define(
       primaryKey: true,
       allowNull: false,
     },
+    status: {
+      type: DataTypes.ENUM,
+      values: ["hidden", "published", "delisted"],
+      allowNull: false,
+      defaultValue: "hidden",
+    },
     title: {
       type: DataTypes.STRING,
       allowNull: false,
@@ -34,6 +40,15 @@ const Article = sequelize.define(
     updated_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
+    },
+    publish_on: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    publish_to: {
+      type: DataTypes.DATE,
+      defaultValue: null,
+      allowNull: true, // If this null, the article will always be published
     },
   },
   {

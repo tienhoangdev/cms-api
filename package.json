@@ -10,7 +10,8 @@
     "dev": "nodemon index.js",
     "debug": "node --inspect index.js",
     "create_migration": "npx sequelize-cli migration:generate --name",
-    "db_migrate": "npx sequelize-cli db:migrate"
+    "prod_db_migrate": "npx sequelize-cli db:migrate --env production",
+    "dev_db_migrate": "npx sequelize-cli db:migrate --env development"
   },
   "keywords": [],
   "author": "",
@@ -32,6 +33,7 @@
     "yup": "^1.4.0"
   },
   "devDependencies": {
+    "babel-register": "^6.26.0",
     "sequelize-cli": "^6.6.2"
   }
 }
