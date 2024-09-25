@@ -6,18 +6,33 @@ import {
   articleUpdateSchema,
   getArticleListSchema,
 } from "./articlesValidationSchema.js";
+import { articleListCache, getHashedQuery } from "../libs/cache.js";
 
 import path from "path";
 
 const articlesController = {
+  // TOTO: Add sort parameters
+  // TOTO: Add filter by some conditions
   getArticleList: async (req, res) => {
     try {
       let queryParam;
       try {
         queryParam = await getArticleListSchema.validate(req.query);
       } catch (error) {
-        console.log(error);
-        res.status(400).json({ message: "Bad request" });
+        res.status(400).json({ message: "Bad request", error: error.message });
+      }
+      // Check if the article list in the cache
+      const [articleListCacheQuery, hashError] = getHashedQuery(queryParam);
+      if (hashError) {
+        return res
+          .status(500)
+          .json({ message: "Something went wrong", error: hashError });
+      }
+      if (!hashError && articleListCacheQuery) {
+        const cachedArticleList = articleListCache.get(articleListCacheQuery);
+        if (cachedArticleList) {
+          return res.status(200).json(cachedArticleList);
+        }
       }
       const { page, pageSize } = queryParam;
       const limit = parseInt(pageSize); // Number of records per page
@@ -27,13 +42,16 @@ const articlesController = {
         offset,
         order: [["created_at", "DESC"]],
       });
-
-      res.status(200).json({
+      const response = {
         totalArticles: count,
         totalPages: Math.ceil(count / limit),
         currentPage: parseInt(page),
         data: rows,
-      });
+      };
+
+      // Add to cache
+      articleListCache.set(articleListCacheQuery, response);
+      res.status(200).json(response);
     } catch (error) {
       console.error("Error in getArticleList", error);
       res.status(500).json({ message: "Something went wrong" });
