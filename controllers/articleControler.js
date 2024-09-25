@@ -46,23 +46,28 @@ const articlesController = {
       if (!articleId) {
         return res.status(400).json({ message: "Missing article id param" });
       }
-      const article = await Articles.findByPk(articleId);
-      if (!article) {
-        return res.status(404).json({ message: "Article not found" });
-      }
-      return res.status(200).json({
-        ...pick(article, [
-          "id",
-          "title",
-          "keywords",
-          "created_at",
-          "updated_at",
-        ]),
-        // This is the default main content that served from minio
-        // TODO: Make this more flexible
-        content: `https://${MINIO_ENDPOINT}/${CMS_DATA_MINIO_BUCKET_NAME}/${articleId}/content.md`,
-        thumbnail: `https://${MINIO_ENDPOINT}/${CMS_DATA_MINIO_BUCKET_NAME}/${articleId}/thumbnail.png`,
-      });
+      await Articles.findByPk(articleId)
+        .then((article) => {
+          if (!article) {
+            return res.status(404).json({ message: "Article not found" });
+          }
+          return res.status(200).json({
+            ...pick(article.dataValues, [
+              "id",
+              "title",
+              "keywords",
+              "created_at",
+              "updated_at",
+            ]).__wrapped__,
+            // This is the default main content that served from minio
+            // TODO: Make this more flexible
+            content: `https://${MINIO_ENDPOINT}/${CMS_DATA_MINIO_BUCKET_NAME}/${articleId}/content.md`,
+            thumbnail: `https://${MINIO_ENDPOINT}/${CMS_DATA_MINIO_BUCKET_NAME}/${articleId}/thumbnail.png`,
+          });
+        })
+        .catch((e) => {
+          throw e;
+        });
     } catch (error) {
       console.error("Error in getArticleById", error?.stack);
       res.status(500).json({ message: "Something went wrong" });

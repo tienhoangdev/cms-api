@@ -12,7 +12,7 @@ export const checkUserApiKey = async (req, res, next) => {
     if (userData) {
       console.log("Get user data from the cache", userData);
       req.auth = userData;
-      return next();
+      next();
     }
     // If the user not found in the cache, try to validate via auth service
     const { AUTH_API_DOMAIN } = process.env;
@@ -29,7 +29,7 @@ export const checkUserApiKey = async (req, res, next) => {
     globalCache.set(API_KEY, userData);
     console.log("User data saved to the cache");
     req.auth = userData;
-    return next();
+    next();
   } catch (error) {
     // console.log("Error in checkUserApiKey", error?.stack);
     return res.status(401).json({ message: error?.message });
