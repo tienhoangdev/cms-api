@@ -1,4 +1,4 @@
-const { Sequelize } = require("sequelize");
+import Sequelize from "sequelize";
 
 const {
   DB_HOST = "localhost",
@@ -17,4 +17,4 @@ const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
   port: DB_PORT,
 });
 
-module.exports = sequelize;
+export default sequelize;

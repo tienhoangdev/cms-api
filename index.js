@@ -1,10 +1,14 @@
-require("dotenv").config();
-const express = require("express");
+import "dotenv/config";
+import express from "express";
 const app = express();
 const port = process.env.PORT || 3000;
-const sequelize = require("./libs/database");
+import sequelize from "./libs/database.js";
+import cors from "cors";
+import "./crons/index.js";
+import { checkBucketConnection } from "./libs/minio.js";
 
 app.use(express.json()); // for parsing application/json
+app.use(cors());
 
 // Sync the models to database
 sequelize
@@ -13,17 +17,10 @@ sequelize
     console.log("Database & tables created!");
   })
   .catch((err) => console.error("Unable to create tables:", err));
-
-// Import routes
-// const postRoutes = require("./routes/posts.route");
-// const categoryRoutes = require('./routes/categoryRoutes');
-// const topicRoutes = require('./routes/topicRoutes');
-const articleRoute = require("./routes/articles.route");
+import articleRoute from "./routes/articles.route.js";
 
 // Use routes
 app.use("/articles", articleRoute);
-// app.use('/categories', categoryRoutes);
-// app.use('/topics', topicRoutes);
 
 app.get("/health-check", (req, res) => {
   res.status(200).json({
@@ -33,6 +30,10 @@ app.get("/health-check", (req, res) => {
   });
 });
 
-app.listen(port, () => {
+app.listen(port, async () => {
   console.log(`Example app listening on port ${port}`);
+  // Checking connection to other services
+  const { CMS_DATA_MINIO_BUCKET_NAME: cmsDataBucketName } = process.env;
+  // TODO: Support check multiple buckets
+  await checkBucketConnection(cmsDataBucketName);
 });

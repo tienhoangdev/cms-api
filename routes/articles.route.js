@@ -1,23 +1,24 @@
-const express = require("express");
-const router = express.Router();
-const articleController = require("../controllers/articleControler");
+import express from "express";
+const articleRoute = express.Router();
+import articleController from "../controllers/articleControler.js";
+import { checkUserApiKey } from "../middlewares/auth.js";
 
 // Create article
-router.post("/create", articleController.createArticle);
+articleRoute.post("/create", articleController.createArticle);
 
 // Upload article
-router.post("/:articleId/upload", articleController.uploadArticleContent);
+articleRoute.post("/:articleId/upload", articleController.uploadArticleContent);
 
-// // Get all posts
-// router.get("/", articleController.getAllPosts);
+// // Get recent articles
+articleRoute.get("/", articleController.getArticleList);
 
-// // Get a specific post
-// router.get("/:id", articleController.getPost);
+// Get a specific article
+articleRoute.get("/:articleId", articleController.getArticleById);
 
-// // Update a post
-// router.put("/:id", articleController.updatePost);
+// // Update an article
+articleRoute.patch("/:articleId/update", articleController.updateArticleById);
 
-// // Delete a post
-// router.delete("/:id", articleController.deletePost);
+// Delete an article
+articleRoute.delete("/:articleId", articleController.deleteArticle);
 
-module.exports = router;
+export default articleRoute;

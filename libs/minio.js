@@ -1,6 +1,6 @@
-const fs = require("fs");
-const Minio = require("minio");
-const { NUMBER } = require("sequelize");
+import fs from "fs";
+import * as Minio from "minio";
+import { NUMBER } from "sequelize";
 
 // Initialize the MinIO client
 const { MINIO_AK, MINIO_SK, MINIO_PORT, MINIO_SSL_ENABLED, MINIO_ENDPOINT } =
@@ -13,6 +13,19 @@ const minioClient = new Minio.Client({
   secretKey: MINIO_SK,
   region: "us-east-1",
 });
+
+export async function checkBucketConnection(bucketName) {
+  try {
+    const exists = await minioClient.bucketExists(bucketName);
+    if (exists) {
+      console.log(`Connected to MinIO bucket: ${bucketName}`);
+    } else {
+      throw new Error(`Can't connect to MinIO bucket ${bucketName}`);
+    }
+  } catch (error) {
+    console.log(`Error in checkBucketConnection`, error);
+  }
+}
 
 // async function putOBject(bucketName, fileKey, filePath) {
 //   try {
@@ -42,7 +55,7 @@ const minioClient = new Minio.Client({
  * @param {string} bucketName
  * @param {string} fileKey
  */
-async function generatePresignedUrl(
+export async function generatePresignedUrl(
   bucketName,
   fileKey,
   expiry = Number(process.env.MINIO_PRESIGNED_UPLOAD_URL_EXPIRE_TIME),
@@ -82,7 +95,3 @@ async function getObject(bucketName, fileKey, downloadPath) {
     console.error("Error getting object:", err);
   }
 }
-
-module.exports = {
-  generatePresignedUrl,
-};
