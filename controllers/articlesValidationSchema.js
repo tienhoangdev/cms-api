@@ -1,4 +1,6 @@
 import yup from "yup";
+import moment from "moment";
+
 export const getArticleListSchema = yup.object().shape({
   page: yup
     .number("page must be a number")
@@ -11,6 +13,10 @@ export const getArticleListSchema = yup.object().shape({
     .max(20, "pageSize can't be bigger than 20")
     .default(10)
     .required(),
+  // startDate: yup.date().default(moment().startOf("day").toDate()),
+  // endDate: yup
+  //   .date()
+  //   .default(moment().subtract(1, "months").endOf("day").toDate()),
 });
 export const articleUpdateSchema = yup.object().shape({
   title: yup

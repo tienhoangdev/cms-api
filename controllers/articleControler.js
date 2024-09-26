@@ -7,8 +7,9 @@ import {
   getArticleListSchema,
 } from "./articlesValidationSchema.js";
 import { articleListCache, getHashedQuery } from "../libs/cache.js";
-
+import { Op } from "sequelize";
 import path from "path";
+import moment from "moment";
 
 const articlesController = {
   // TOTO: Add sort parameters
@@ -20,7 +21,9 @@ const articlesController = {
       try {
         queryParam = await getArticleListSchema.validate(req.query);
       } catch (error) {
-        res.status(400).json({ message: "Bad request", error: error.message });
+        return res
+          .status(400)
+          .json({ message: "Bad request", error: error.message });
       }
       // Check if the article list in the cache
       const [articleListCacheQuery, hashError] = getHashedQuery(queryParam);
@@ -38,11 +41,25 @@ const articlesController = {
       const { page, pageSize } = queryParam;
       const limit = parseInt(pageSize); // Number of records per page
       const offset = (parseInt(page) - 1) * limit; // Calculate offset
+      const now = moment().toDate();
       const { count, rows } = await Articles.findAndCountAll({
         limit,
         offset,
         order: [["created_at", "DESC"]],
         where: {
+          [Op.and]: [
+            {
+              publish_on: {
+                [Op.lte]: now,
+              },
+            },
+            {
+              [Op.or]: [
+                { publish_to: { [Op.gte]: now } },
+                { publish_to: null },
+              ],
+            },
+          ],
           status: "published",
         },
       });
@@ -52,7 +69,6 @@ const articlesController = {
         currentPage: parseInt(page),
         data: rows,
       };
-
       // Add to cache
       articleListCache.set(articleListCacheQuery, response);
       res.status(200).json(response);
