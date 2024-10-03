@@ -5,11 +5,17 @@ import pick from "lodash";
 import {
   articleUpdateSchema,
   getArticleListSchema,
+  getArticleStatSchema,
 } from "./articlesValidationSchema.js";
-import { articleListCache, getHashedQuery } from "../libs/cache.js";
+import {
+  articleListCache,
+  getHashedQuery,
+  articleCountByKeywordCache,
+} from "../libs/cache.js";
 import { Op } from "sequelize";
 import path from "path";
 import moment from "moment";
+import { makeResponse } from "../utils/index.js";
 
 const articlesController = {
   // TOTO: Add sort parameters
@@ -148,8 +154,8 @@ const articlesController = {
           generatePresignedUrl(cmsDataBucketName, fileKey).then(
             (presignedUrl) => {
               response[fileName] = presignedUrl;
-            },
-          ),
+            }
+          )
         );
       }
       await Promise.all(promises);
@@ -159,6 +165,25 @@ const articlesController = {
     } catch (error) {
       console.error("Error in uploadArticleContent", error?.stack);
       res.status(500).json({ message: "Something went wrong" });
+    }
+  },
+  getArticleStatistics: async (req, res) => {
+    try {
+      let queries;
+      try {
+        queries = await getArticleStatSchema.validate(req.query);
+      } catch (error) {
+        return res.status(400).json({ message: "Bad request" });
+      }
+      const keywords = queries.keywords.split(",");
+      const response = makeResponse(
+        articleCountByKeywordCache.mget(keywords),
+        true
+      );
+      res.status(200).json(response);
+    } catch (error) {
+      console.error("Error in getArticleStatistics", error?.stack);
+      res.status(500).json(makeResponse(null, false, "Something went wrong"));
     }
   },
   updateArticleById: async (req, res) => {
@@ -185,7 +210,7 @@ const articlesController = {
         {
           where: { id: articleId },
           returning: true,
-        },
+        }
       );
       return res.status(200).json({
         data: pick(response[1][0].dataValues, [

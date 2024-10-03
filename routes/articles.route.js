@@ -10,27 +10,30 @@ articleRoute.post("/create", checkUserApiKey, articleController.createArticle);
 articleRoute.post(
   "/:articleId/upload",
   checkUserApiKey,
-  articleController.uploadArticleContent,
+  articleController.uploadArticleContent
 );
 
-// // Get recent articles
+// Get recent articles
 articleRoute.get("/", articleController.getArticleList);
+
+// Get article statistic
+articleRoute.get("/statistics", articleController.getArticleStatistics);
 
 // Get a specific article
 articleRoute.get("/:articleId", articleController.getArticleById);
 
-// // Update an article
+// Update an article
 articleRoute.patch(
   "/:articleId/update",
   checkUserApiKey,
-  articleController.updateArticleById,
+  articleController.updateArticleById
 );
 
 // Delete an article
 articleRoute.delete(
   "/:articleId",
   checkUserApiKey,
-  articleController.deleteArticle,
+  articleController.deleteArticle
 );
 
 export default articleRoute;

@@ -8,13 +8,15 @@ cron.schedule("* * * * *", async () => {
     const queryStm = `
       select keywords as keyword, count(*)
       from (select jsonb_array_elements_text(keywords) as keywords
-            from articles) as unnested_keywords
+            from articles where status = 'published') as unnested_keywords
       group by keyword;
     `;
     await sequelize.query(queryStm).then(([results]) => {
-      results.forEach(({ keyword, count }) => {
-        articleCountByKeywordCache.set(keyword, count);
-      });
+      articleCountByKeywordCache.mset(
+        results.map(({ keyword, count }) => {
+          return { key: keyword, val: Number(count) };
+        })
+      );
     });
   } catch (error) {
     console.log("Error in cron: Get articles count by keywords", error);

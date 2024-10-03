@@ -1,5 +1,4 @@
 import yup from "yup";
-import moment from "moment";
 
 export const getArticleListSchema = yup.object().shape({
   page: yup
@@ -25,4 +24,8 @@ export const articleUpdateSchema = yup.object().shape({
     .notRequired(),
   description: yup.string(),
   keywords: yup.array().of(yup.string()),
+});
+
+export const getArticleStatSchema = yup.object().shape({
+  keywords: yup.string().required("keywords param is required"),
 });
