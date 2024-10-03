@@ -5,7 +5,7 @@ export const checkUserApiKey = async (req, res, next) => {
   try {
     const { api_key: API_KEY } = req.headers;
     if (!API_KEY) {
-      res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({ message: "Unauthorized" });
     }
     // Try to get the user information from the cache first
     let userData = globalCache.get(API_KEY);
@@ -31,7 +31,7 @@ export const checkUserApiKey = async (req, res, next) => {
     req.auth = userData;
     next();
   } catch (error) {
-    // console.log("Error in checkUserApiKey", error?.stack);
+    console.log("Error in checkUserApiKey", error?.stack);
     return res.status(401).json({ message: error?.message });
   }
 };
