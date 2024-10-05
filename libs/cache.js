@@ -13,6 +13,10 @@ export const articleListCache = new NodeCache({
   stdTTL: process.env.DEFAULT_CACHE_TTL || 1000,
 });
 
+export const articleDetailCache = new NodeCache({
+  stdTTL: process.env.DEFAULT_CACHE_TTL || 1000,
+});
+
 export const getHashedQuery = (query = "") => {
   try {
     if (typeof query !== "string") query = JSON.stringify(query);

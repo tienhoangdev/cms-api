@@ -11,6 +11,7 @@ import {
   articleListCache,
   getHashedQuery,
   articleCountByKeywordCache,
+  articleDetailCache,
 } from "../libs/cache.js";
 import { Op } from "sequelize";
 import path from "path";
@@ -19,7 +20,7 @@ import { makeResponse } from "../utils/index.js";
 
 const articlesController = {
   // TOTO: Add sort parameters
-  // TOTO: Add filter by some conditions
+  // TOTO: Add filter by some conditions: keyword
   // TODO: Filter by status of the article, must be ADMIN and require access key to access article with status !== 'published'
   getArticleList: async (req, res) => {
     try {
@@ -45,12 +46,14 @@ const articlesController = {
         }
       }
       const { page, pageSize } = queryParam;
+      const { MINIO_ENDPOINT, CMS_DATA_MINIO_BUCKET_NAME } = process.env;
       const limit = parseInt(pageSize); // Number of records per page
       const offset = (parseInt(page) - 1) * limit; // Calculate offset
       const now = moment().toDate();
       const { count, rows } = await Articles.findAndCountAll({
         limit,
         offset,
+        raw: true,
         order: [["created_at", "DESC"]],
         where: {
           [Op.and]: [
@@ -68,12 +71,20 @@ const articlesController = {
           ],
           status: "published",
         },
+      }).then(({ count, rows }) => {
+        console.log("[Tim] rows");
+        return { count, rows };
       });
       const response = {
         totalArticles: count,
         totalPages: Math.ceil(count / limit),
         currentPage: parseInt(page),
-        data: rows,
+        data: rows.map((article) => {
+          return {
+            ...article,
+            thumbnail: `https://${MINIO_ENDPOINT}/${CMS_DATA_MINIO_BUCKET_NAME}/${article.id}/thumbnail.png`,
+          };
+        }),
       };
       // Add to cache
       articleListCache.set(articleListCacheQuery, response);
@@ -90,12 +101,17 @@ const articlesController = {
       if (!articleId) {
         return res.status(400).json({ message: "Missing article id param" });
       }
+      const cachedInfo = articleDetailCache.get(articleId);
+      if (cachedInfo) {
+        return res.status(200).json(cachedInfo);
+      }
+      // Check if the articleInfo available in the cache
       await Articles.findByPk(articleId)
         .then((article) => {
           if (!article) {
             return res.status(404).json({ message: "Article not found" });
           }
-          return res.status(200).json({
+          const response = {
             ...pick(article.dataValues, [
               "id",
               "title",
@@ -107,7 +123,9 @@ const articlesController = {
             // TODO: Make this more flexible
             content: `https://${MINIO_ENDPOINT}/${CMS_DATA_MINIO_BUCKET_NAME}/${articleId}/content.md`,
             thumbnail: `https://${MINIO_ENDPOINT}/${CMS_DATA_MINIO_BUCKET_NAME}/${articleId}/thumbnail.png`,
-          });
+          };
+          articleDetailCache.set(articleId, response);
+          return res.status(200).json(response);
         })
         .catch((e) => {
           throw e;
@@ -154,8 +172,8 @@ const articlesController = {
           generatePresignedUrl(cmsDataBucketName, fileKey).then(
             (presignedUrl) => {
               response[fileName] = presignedUrl;
-            }
-          )
+            },
+          ),
         );
       }
       await Promise.all(promises);
@@ -178,7 +196,7 @@ const articlesController = {
       const keywords = queries.keywords.split(",");
       const response = makeResponse(
         articleCountByKeywordCache.mget(keywords),
-        true
+        true,
       );
       res.status(200).json(response);
     } catch (error) {
@@ -210,7 +228,7 @@ const articlesController = {
         {
           where: { id: articleId },
           returning: true,
-        }
+        },
       );
       return res.status(200).json({
         data: pick(response[1][0].dataValues, [
