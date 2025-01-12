@@ -19,8 +19,6 @@ import moment from "moment";
 import { makeResponse } from "../utils/index.js";
 
 const articlesController = {
-  // TOTO: Add sort parameters
-  // TOTO: Add filter by some conditions: keyword
   // TODO: Filter by status of the article, must be ADMIN and require access key to access article with status !== 'published'
   getArticleList: async (req, res) => {
     try {
@@ -45,35 +43,43 @@ const articlesController = {
           return res.status(200).json(cachedArticleList);
         }
       }
-      const { page, pageSize } = queryParam;
+      const {
+        page,
+        pageSize,
+        keywords,
+        sortby = "created_at",
+        sorttype = "DESC",
+      } = queryParam;
       const { MINIO_ENDPOINT, CMS_DATA_MINIO_BUCKET_NAME } = process.env;
       const limit = parseInt(pageSize); // Number of records per page
       const offset = (parseInt(page) - 1) * limit; // Calculate offset
       const now = moment().toDate();
+      let whereClauses = {
+        [Op.and]: [
+          {
+            publish_on: {
+              [Op.lte]: now,
+            },
+          },
+          {
+            [Op.or]: [{ publish_to: { [Op.gte]: now } }, { publish_to: null }],
+          },
+        ],
+        status: "published",
+      };
+
+      const filterByKeywords = !!keywords?.length;
+      if (filterByKeywords) {
+        whereClauses[Op.and].push({
+          keywords: { [Op.contains]: keywords.split(",") },
+        });
+      }
       const { count, rows } = await Articles.findAndCountAll({
         limit,
         offset,
         raw: true,
-        order: [["created_at", "DESC"]],
-        where: {
-          [Op.and]: [
-            {
-              publish_on: {
-                [Op.lte]: now,
-              },
-            },
-            {
-              [Op.or]: [
-                { publish_to: { [Op.gte]: now } },
-                { publish_to: null },
-              ],
-            },
-          ],
-          status: "published",
-        },
-      }).then(({ count, rows }) => {
-        console.log("[Tim] rows");
-        return { count, rows };
+        order: [[sortby, sorttype]],
+        where: whereClauses,
       });
       const response = {
         totalArticles: count,

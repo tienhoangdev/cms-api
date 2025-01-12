@@ -12,6 +12,24 @@ export const getArticleListSchema = yup.object().shape({
     .max(20, "pageSize can't be bigger than 20")
     .default(10)
     .required(),
+  keywords: yup
+    .string()
+    .matches(
+      /^([^,]*,){0,9}[^,]*$/,
+      "Must be a comma-separated string with up to 10 items",
+    )
+    .notRequired(),
+  sortby: yup
+    .string()
+    .oneOf(
+      ["publish_on", "title"],
+      "Invalid sortby, must be publish_on or title",
+    ),
+  // status:yup.string().oneOf([]),
+  sorttype: yup
+    .string()
+    .uppercase()
+    .oneOf(["DESC", "ASC"], "Invalid sorttype, must be either DESC or ASC"),
   // startDate: yup.date().default(moment().startOf("day").toDate()),
   // endDate: yup
   //   .date()
