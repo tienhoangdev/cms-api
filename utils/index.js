@@ -1,7 +1,7 @@
 export const makeResponse = (responseBody = null, success, message = "") => {
   return {
     success,
-    result: responseBody,
+    data: responseBody,
     message:
       !message && success
         ? "Success"
